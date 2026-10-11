@@ -35,7 +35,27 @@ The platform supports multi-user collaboration, subscription-based billing via S
 
 Demo video: https://youtu.be/B6HJi5CeOBk
 
-Local demo recording: `docs/lovable-demo.webm`
+Live link: http://lovable.35.200.131.22.nip.io/login
+
+---
+
+## Access via nip.io (no DNS setup)
+
+nip.io is wildcard DNS: any hostname like `<anything>.35.200.131.22.nip.io`
+resolves to the cluster ingress IP `35.200.131.22`, so the deployed app works
+without registering DNS records. The IP is part of the hostname.
+
+| URL | Routes to |
+|---|---|
+| http://lovable.35.200.131.22.nip.io | Frontend (`lovable-frontend`) |
+| http://api.35.200.131.22.nip.io | Backend (`api-gateway`) |
+| http://project-{id}.previews.35.200.131.22.nip.io | Live project preview (`lovable-me-proxy` → runner pod, mapping in Redis) |
+
+Wiring: `k8s/infra/ingress-nipio.yaml` (NGINX ingress rules), `PREVIEW_DOMAIN` /
+`APP_FRONTEND_URL` in `k8s/infra/namespaces.yaml`, `VITE_API_URL` default in
+`lovable-frontend/Dockerfile`, CORS allowlist in `api-gateway/.../CorsConfig.java`.
+`k8s/infra/ingress.yaml` mirrors the same routing on `lovable.in` once real DNS
+points at the cluster. All nip.io traffic here is plain HTTP (no TLS).
 
 ---
 
@@ -74,7 +94,7 @@ Lovable follows a microservices architecture with six Spring Boot services, a Re
 
 ---
 
-### Code Generation and Code Execution
+## Code Generation and Code Execution
 
 Lovable is architecturally divided into two distinct domains: **Code Generation** and **Code Execution**. These two domains are implemented by separate microservices with clear responsibilities, enabling independent scaling and evolution.
 
