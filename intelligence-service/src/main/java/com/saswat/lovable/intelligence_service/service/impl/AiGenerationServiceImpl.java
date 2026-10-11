@@ -119,8 +119,11 @@ public class AiGenerationServiceImpl implements AiGenerationService {
     private void finalizeChats(String userMessage, ChatSession chatSession, String fullText, Long duration, Usage usage, Long userId) {
         Long projectId = chatSession.getId().getProjectId();
 
-        if(usage != null) {
-            int totalTokens = usage.getTotalTokens();
+        Integer promptTokens = usage != null ? usage.getPromptTokens() : null;
+        Integer completionTokens = usage != null ? usage.getCompletionTokens() : null;
+        Integer totalTokens = usage != null ? usage.getTotalTokens() : null;
+
+        if (totalTokens != null) {
             usageService.recordTokenUsage(chatSession.getId().getUserId(), totalTokens);
         }
 
@@ -130,7 +133,7 @@ public class AiGenerationServiceImpl implements AiGenerationService {
                         .chatSession(chatSession)
                         .role(MessageRole.USER)
                         .content(userMessage)
-                        .tokensUsed(usage.getPromptTokens())
+                        .tokensUsed(promptTokens != null ? promptTokens : 0)
                         .build()
         );
 
@@ -138,7 +141,7 @@ public class AiGenerationServiceImpl implements AiGenerationService {
                 .role(MessageRole.ASSISTANT)
                 .content("Assistant Message here...")
                 .chatSession(chatSession)
-                .tokensUsed(usage.getCompletionTokens())
+                .tokensUsed(completionTokens != null ? completionTokens : 0)
                 .build();
 
         assistantChatMessage = chatMessageRepository.save(assistantChatMessage);
