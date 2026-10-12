@@ -21,7 +21,8 @@ spec:
       containers:
         # 1. THE RUNNER (Vite / Node.js)
         - name: runner
-          image: node:20-alpine
+          image: node:22-alpine
+          imagePullPolicy: IfNotPresent
           workingDir: /app
           command: ["/bin/sh", "-c", "sleep infinity"]
           volumeMounts:
