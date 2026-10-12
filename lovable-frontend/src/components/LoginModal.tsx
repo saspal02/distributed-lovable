@@ -59,7 +59,7 @@ export function LoginModal() {
 
       <div className="relative w-full max-w-md">
         {/* Card */}
-        <div className="bg-card border border-border/50 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-card border border-border/50 rounded-2xl p-6 sm:p-8 shadow-2xl">
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-primary/20 mb-5">

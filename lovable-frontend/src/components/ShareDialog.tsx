@@ -98,10 +98,10 @@ export function ShareDialog({ projectId, trigger, open, onOpenChange }: ShareDia
 
                     {/* Invite Section */}
                     <div className="space-y-3 mb-6">
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                             <Input
                                 placeholder="Email or username"
-                                className="flex-1 bg-muted/50 border-input/50"
+                                className="flex-1 min-h-[44px] bg-muted/50 border-input/50"
                                 value={inviteEmail}
                                 onChange={(e) => setInviteEmail(e.target.value)}
                                 onKeyDown={(e) => e.key === "Enter" && handleInvite()}
@@ -109,7 +109,7 @@ export function ShareDialog({ projectId, trigger, open, onOpenChange }: ShareDia
                             <Button
                                 onClick={handleInvite}
                                 disabled={!inviteEmail.trim() || loading}
-                                className="px-6"
+                                className="px-6 min-h-[44px] sm:min-h-0"
                             >
                                 Invite
                             </Button>
@@ -166,7 +166,7 @@ export function ShareDialog({ projectId, trigger, open, onOpenChange }: ShareDia
                                                 else handleRoleChange(member.userId, val as ProjectRole);
                                             }}
                                         >
-                                            <SelectTrigger className="h-8 w-[100px] text-xs border-none bg-transparent hover:bg-muted focus:ring-1 shadow-none">
+                                            <SelectTrigger className="min-h-[44px] md:min-h-0 md:h-8 w-[110px] md:w-[100px] text-xs border-none bg-transparent hover:bg-muted focus:ring-1 shadow-none">
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent align="end">

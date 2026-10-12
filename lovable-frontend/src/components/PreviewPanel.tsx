@@ -129,44 +129,46 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full min-h-0 min-w-0 bg-background">
       {/* URL Bar */}
-      <div className="h-12 shrink-0 flex items-center gap-2 px-3 border-b border-border/50 bg-panel">
-        <div className="flex items-center gap-1">
+      <div className="min-h-[56px] md:h-12 shrink-0 flex items-center gap-1 md:gap-2 px-2 md:px-3 py-2 md:py-0 border-b border-border/50 bg-panel">
+        <div className="flex items-center gap-1 shrink-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={handleRefresh}
             disabled={!previewUrl}
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            aria-label="Refresh preview"
+            className="h-11 w-11 md:h-7 md:w-7 text-muted-foreground hover:text-foreground"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-4 h-4 md:w-3.5 md:h-3.5" />
           </Button>
         </div>
 
-        <div className="flex-1 flex items-center h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
+        <div className="flex-1 flex items-center min-w-0 min-h-[44px] md:h-8 px-3 rounded-md bg-muted/50 text-sm text-muted-foreground">
           <Globe className="w-3.5 h-3.5 mr-2 shrink-0" />
           <span className="truncate">
             {previewUrl || "Click 'Run Preview' to deploy"}
           </span>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {previewUrl && (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => window.open(previewUrl, "_blank")}
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+              aria-label="Open preview in new tab"
+              className="h-11 w-11 md:h-7 md:w-7 text-muted-foreground hover:text-foreground"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-4 h-4 md:w-3.5 md:h-3.5" />
             </Button>
           )}
           <Button
             onClick={handleDeploy}
             disabled={isDeploying}
             size="sm"
-            className="h-7 px-3 bg-primary hover:bg-primary/90 text-xs font-medium"
+            className="min-h-[44px] md:min-h-0 md:h-7 px-3 bg-primary hover:bg-primary/90 text-xs font-medium"
           >
             {isDeploying ? (
               <>
@@ -184,9 +186,9 @@ export function PreviewPanel({ projectId, runtimeError, onDismiss, onFix }: Prev
       </div>
 
       {/* Preview Area */}
-      <div className="flex-1 bg-[#1a1a1a] relative">
+      <div className="flex-1 min-h-0 bg-[#1a1a1a] relative">
         {autoRetrying && (
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-card/95 border border-border/50 shadow-lg text-xs text-muted-foreground">
+          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-2 min-h-[44px] rounded-full bg-card/95 border border-border/50 shadow-lg text-xs text-muted-foreground max-w-[calc(100vw-2rem)] whitespace-nowrap overflow-hidden">
             <Loader2 className="w-3 h-3 animate-spin text-primary" />
             <span>
               Starting preview… retry {Math.min(retryCount + 1, RETRY_DELAYS_MS.length)}/{RETRY_DELAYS_MS.length}

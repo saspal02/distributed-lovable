@@ -284,31 +284,31 @@ Please analyze this error and fix the code to resolve it.`;
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-background">
+    <div className="h-[100dvh] min-h-[100dvh] flex flex-col overflow-hidden bg-background">
       {/* Header */}
-      <header className="h-12 shrink-0 border-b border-border/50 bg-panel flex items-center justify-between px-3">
-        <div className="flex items-center gap-2">
+      <header className="min-h-[56px] md:h-12 shrink-0 border-b border-border/50 bg-panel flex items-center justify-between gap-2 px-2 md:px-3 py-2 md:py-0 pt-safe">
+        <div className="flex items-center gap-2 min-w-0 flex-shrink">
           {project ? (
             <>
               <div
-                className="w-7 h-7 rounded-sm shadow-sm"
+                className="w-7 h-7 rounded-sm shadow-sm shrink-0"
                 style={generateGradient(project.name)}
               />
-              <span className="font-semibold text-sm">{project.name}</span>
+              <span className="font-semibold text-sm truncate max-w-[100px] sm:max-w-[180px]">{project.name}</span>
             </>
           ) : (
             <>
-              <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
+              <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
               </div>
               <span className="font-semibold text-sm">Loading...</span>
             </>
           )}
-          <span className="text-muted-foreground text-xs ml-2">Previewing last saved version</span>
+          <span className="hidden md:inline text-muted-foreground text-xs ml-2 whitespace-nowrap">Previewing last saved version</span>
           {project?.role !== 'VIEWER' && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 ml-2 text-muted-foreground">
+                <Button variant="ghost" size="icon" className="h-11 w-11 md:h-6 md:w-6 ml-1 md:ml-2 text-muted-foreground shrink-0" aria-label="Project options">
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -330,14 +330,13 @@ Please analyze this error and fix the code to resolve it.`;
           )}
         </div>
 
-        <div className="flex items-center gap-1">
-          
+        <div className="hidden sm:flex items-center gap-1">
 
           {/* View Mode Toggle */}
-          <div className="flex items-center bg-muted/30 rounded-lg p-0.5 mx-2">
+          <div className="flex items-center bg-muted/30 rounded-lg p-0.5 mx-1 md:mx-2">
             <button
               onClick={() => setViewMode("preview")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all rounded-md ${viewMode === "preview"
+              className={`flex items-center gap-1.5 px-3 min-h-[44px] md:min-h-0 md:py-1.5 text-xs font-medium transition-all rounded-md ${viewMode === "preview"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -347,7 +346,7 @@ Please analyze this error and fix the code to resolve it.`;
             </button>
             <button
               onClick={() => setViewMode("code")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-all rounded-md ${viewMode === "code"
+              className={`flex items-center gap-1.5 px-3 min-h-[44px] md:min-h-0 md:py-1.5 text-xs font-medium transition-all rounded-md ${viewMode === "code"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
                 }`}
@@ -358,9 +357,9 @@ Please analyze this error and fix the code to resolve it.`;
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2 shrink-0">
           {project && (
-            <div className="flex items-center gap-2 px-2 py-1 bg-muted/30 rounded-full border border-border/50">
+            <div className="hidden sm:flex items-center gap-2 px-2 py-1 bg-muted/30 rounded-full border border-border/50">
               <Avatar className="h-6 w-6 border border-primary/20">
                 <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-semibold">
                   {(() => {
@@ -388,17 +387,17 @@ Please analyze this error and fix the code to resolve it.`;
           <ShareDialog
             projectId={projectId}
             trigger={
-              <Button variant="outline" size="sm" className="h-8 text-xs font-medium" disabled={project?.role === 'VIEWER'}>
+              <Button variant="outline" size="sm" className="h-11 md:h-8 min-w-[44px] text-xs font-medium" disabled={project?.role === 'VIEWER'}>
                 Share
               </Button>
             }
           />
           {project?.role !== 'VIEWER' && (
             <>
-              <Button variant="outline" size="sm" className="h-8 text-xs">
+              <Button variant="outline" size="sm" className="hidden sm:inline-flex h-11 md:h-8 text-xs">
                 Upgrade
               </Button>
-              <Button size="sm" className="h-8 text-xs bg-primary hover:bg-primary/90">
+              <Button size="sm" className="h-11 md:h-8 text-xs bg-primary hover:bg-primary/90">
                 Publish
               </Button>
             </>
@@ -407,19 +406,48 @@ Please analyze this error and fix the code to resolve it.`;
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            aria-label="Log out"
+            className="h-11 w-11 md:h-8 md:w-8 text-muted-foreground hover:text-foreground shrink-0"
           >
             <LogOut className="w-4 h-4" />
           </Button>
         </div>
       </header>
 
+      {/* Mobile view-mode switcher (icon-safe, 44px targets, no layout refactor) */}
+      <div className="sm:hidden shrink-0 flex items-center justify-center gap-1 px-2 py-2 border-b border-border/50 bg-panel pb-safe">
+        <div className="flex items-center bg-muted/30 rounded-lg p-0.5 w-full max-w-xs">
+          <button
+            onClick={() => setViewMode("preview")}
+            aria-pressed={viewMode === "preview"}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 min-h-[44px] text-xs font-medium transition-all rounded-md ${viewMode === "preview"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
+          >
+            <Sparkles className="w-3 h-3" />
+            Preview
+          </button>
+          <button
+            onClick={() => setViewMode("code")}
+            aria-pressed={viewMode === "code"}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 min-h-[44px] text-xs font-medium transition-all rounded-md ${viewMode === "code"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
+          >
+            <Code className="w-3 h-3" />
+            Code
+          </button>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <ResizablePanelGroup direction="horizontal" className="h-full min-h-0">
           {/* Chat Panel */}
-          <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
-            <div className="h-full border-r border-border/50 bg-panel">
+          <ResizablePanel defaultSize={35} minSize={20} maxSize={60} className="min-w-0">
+            <div className="h-full min-h-0 border-r border-border/50 bg-panel overflow-hidden">
               <ChatPanel
                 messages={messages}
                 onSendMessage={handleSendMessage}
@@ -430,16 +458,16 @@ Please analyze this error and fix the code to resolve it.`;
             </div>
           </ResizablePanel>
 
-          <ResizableHandle className="w-px bg-border/50 hover:bg-primary/50 transition-colors" />
+          <ResizableHandle className="touch-pan-y" />
 
           {/* Code/Preview Panel */}
-          <ResizablePanel defaultSize={65} minSize={50} maxSize={75}>
-            <div className="h-full">
-              <div className="h-full relative">
-                <div className={cn("h-full absolute inset-0", viewMode !== "code" && "hidden")}>
+          <ResizablePanel defaultSize={65} minSize={30} maxSize={80} className="min-w-0">
+            <div className="h-full min-h-0 min-w-0 overflow-hidden">
+              <div className="h-full min-h-0 relative">
+                <div className={cn("h-full absolute inset-0 min-w-0", viewMode !== "code" && "hidden")}>
                   <CodePanel projectId={projectId} updatedFiles={updatedFiles} />
                 </div>
-                <div className={cn("h-full absolute inset-0", viewMode !== "preview" && "hidden")}>
+                <div className={cn("h-full absolute inset-0 min-w-0", viewMode !== "preview" && "hidden")}>
                   <PreviewPanel
                     projectId={projectId}
                     runtimeError={runtimeError}

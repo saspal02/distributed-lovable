@@ -37,7 +37,7 @@ export const ChatEventRenderer = ({ event, isLoading }: { event: ChatEvent, isLo
 
     case ChatEventType.MESSAGE:
       return (
-        <div className="prose prose-invert prose-sm max-w-none text-[#ececec] leading-relaxed mb-4">
+        <div className="prose prose-invert prose-sm max-w-none text-[#ececec] leading-relaxed mb-4 break-words overflow-x-auto">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {event.content}
           </ReactMarkdown>
@@ -84,7 +84,7 @@ const CollapsibleEvent = ({
             <span className="text-[#949494] text-[13px] font-medium shrink-0">{label}</span>
             
             {/* File Name Badge */}
-            <span className="bg-[#262626] text-[#ececec] text-[12px] px-2 py-0.5 rounded-md font-mono border border-[#333] truncate">
+            <span className="bg-[#262626] text-[#ececec] text-[12px] px-2 py-0.5 rounded-md font-mono border border-[#333] truncate max-w-[140px] sm:max-w-none">
               {files[0].split('/').pop()}
             </span>
 
@@ -100,7 +100,7 @@ const CollapsibleEvent = ({
         {showButton && (
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
-            className="text-[#949494] hover:text-[#ececec] text-[12px] font-medium bg-[#1a1a1a] px-2 py-0.5 rounded border border-[#333] transition-colors ml-4"
+            className="text-[#949494] hover:text-[#ececec] text-[12px] font-medium bg-[#1a1a1a] px-2 min-h-[44px] md:min-h-0 md:py-0.5 rounded border border-[#333] transition-colors ml-4 shrink-0"
           >
             {isExpanded ? 'Hide' : 'Show'}
           </button>

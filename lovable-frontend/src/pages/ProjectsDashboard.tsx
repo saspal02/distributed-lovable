@@ -307,7 +307,7 @@ export function ProjectsDashboard() {
                                         </CardTitle>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2 text-muted-foreground hover:text-foreground">
+                                                <Button variant="ghost" size="icon" aria-label="Project options" className="h-11 w-11 md:h-8 md:w-8 -mt-1 -mr-2 text-muted-foreground hover:text-foreground shrink-0">
                                                     <MoreVertical className="w-4 h-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>

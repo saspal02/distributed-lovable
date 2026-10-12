@@ -25,8 +25,8 @@ export function RuntimeErrorAlert({ error, onDismiss, onFix }: RuntimeErrorAlert
     if (!error) return null;
 
     return (
-        <div className="absolute bottom-4 right-4 z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
-            <div className="w-[400px] bg-[#1e1e20] border border-red-500/20 rounded-xl shadow-2xl overflow-hidden">
+        <div className="absolute bottom-4 right-4 left-4 sm:left-auto z-50 animate-in slide-in-from-bottom-5 fade-in duration-300">
+            <div className="w-full sm:w-[400px] max-w-[400px] mx-auto sm:mx-0 max-h-[50dvh] overflow-y-auto bg-[#1e1e20] border border-red-500/20 rounded-xl shadow-2xl overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 bg-red-500/10 border-b border-red-500/10">
                     <div className="flex items-center gap-3">
@@ -40,7 +40,8 @@ export function RuntimeErrorAlert({ error, onDismiss, onFix }: RuntimeErrorAlert
                     </div>
                     <button
                         onClick={onDismiss}
-                        className="text-zinc-400 hover:text-white transition-colors"
+                        aria-label="Dismiss error"
+                        className="text-zinc-400 hover:text-white transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center -m-2"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -89,17 +90,17 @@ export function RuntimeErrorAlert({ error, onDismiss, onFix }: RuntimeErrorAlert
                 </div>
 
                 {/* Footer */}
-                <div className="p-3 bg-[#27272a] flex items-center justify-between border-t border-zinc-800">
+                <div className="p-3 bg-[#27272a] flex items-center justify-between gap-2 border-t border-zinc-800">
                     <div className="flex items-center gap-3 text-xs text-zinc-500 px-2">
-                        <button onClick={onDismiss} className="hover:text-zinc-300 transition-colors">
+                        <button onClick={onDismiss} className="hover:text-zinc-300 transition-colors min-h-[44px] px-2">
                             Dismiss
                         </button>
-                        <span>ESC</span>
+                        <span className="hidden sm:inline">ESC</span>
                     </div>
                     <Button
                         size="sm"
                         onClick={() => onFix(error)}
-                        className="bg-blue-600 hover:bg-blue-500 text-white border-none h-8 px-4 text-xs font-medium gap-2 shadow-lg shadow-blue-900/20"
+                        className="bg-blue-600 hover:bg-blue-500 text-white border-none min-h-[44px] md:min-h-0 md:h-8 px-4 text-xs font-medium gap-2 shadow-lg shadow-blue-900/20"
                     >
                         <Wrench className="w-3.5 h-3.5" />
                         Fix issues

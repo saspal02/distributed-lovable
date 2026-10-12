@@ -65,9 +65,9 @@ export function ChatPanel({ messages, onSendMessage, isStreaming, isLoading, rea
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full min-h-0 bg-background">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -94,7 +94,7 @@ export function ChatPanel({ messages, onSendMessage, isStreaming, isLoading, rea
       </div>
 
       {/* Input Area */}
-      <div className="shrink-0 p-3 border-t border-border/50 bg-card">
+      <div className="shrink-0 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-border/50 bg-card">
         <form onSubmit={handleSubmit} className="relative">
           <Textarea
             ref={textareaRef}
@@ -102,7 +102,7 @@ export function ChatPanel({ messages, onSendMessage, isStreaming, isLoading, rea
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
             placeholder={readOnly ? "You have view-only access to this project" : "Describe what you want to build..."}
-            className="min-h-[48px] max-h-[200px] pr-12 resize-none bg-muted/30 border-border/30 focus:border-primary/50 rounded-xl text-sm"
+            className="min-h-[48px] max-h-[200px] pr-14 resize-none bg-muted/30 border-border/30 focus:border-primary/50 rounded-xl text-base md:text-sm"
             disabled={isStreaming || readOnly}
             rows={1}
           />
@@ -110,7 +110,8 @@ export function ChatPanel({ messages, onSendMessage, isStreaming, isLoading, rea
             type="submit"
             size="icon"
             disabled={!input.trim() || isStreaming || readOnly}
-            className="absolute right-2 bottom-2 h-8 w-8 rounded-lg"
+            aria-label="Send message"
+            className="absolute right-2 bottom-2 h-11 w-11 md:h-8 md:w-8 rounded-lg shrink-0"
           >
             {isStreaming ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -148,12 +149,12 @@ function MessageItem({ message, isStreaming }: { message: ChatMessage, isStreami
     : liveEvents;
 
   return (
-    <div className={`p-5 border-b border-border/10 ${message.role === 'user' ? 'bg-muted/10' : 'bg-background'}`}>
-      <div className="max-w-4xl mx-auto">
+    <div className={`p-3 sm:p-5 border-b border-border/10 ${message.role === 'user' ? 'bg-muted/10' : 'bg-background'}`}>
+      <div className="max-w-4xl mx-auto min-w-0">
         {message.role === "user" ? (
-          <div className="flex flex-col items-end gap-2">
-            <div className="bg-primary/10 text-primary-foreground text-sm py-2.5 px-4 rounded-2xl rounded-tr-none border border-primary/20 max-w-[85%]">
-              <p className="text-foreground leading-relaxed whitespace-pre-wrap">{message.content}</p>
+          <div className="flex flex-col items-end gap-2 min-w-0">
+            <div className="bg-primary/10 text-primary-foreground text-sm py-2.5 px-4 rounded-2xl rounded-tr-none border border-primary/20 max-w-[92%] sm:max-w-[85%] min-w-0">
+              <p className="text-foreground leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
             </div>
             {message.createdAt && (
               <span className="text-[10px] text-muted-foreground px-1 uppercase tracking-tight">
@@ -183,16 +184,16 @@ function MessageItem({ message, isStreaming }: { message: ChatMessage, isStreami
             {/* Action buttons for assistant message */}
             {!message.isStreaming && eventsToRender.length > 0 && (
               <div className="flex items-center gap-1 pt-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                <Button variant="ghost" size="icon" aria-label="Retry" className="h-11 w-11 md:h-8 md:w-8 text-muted-foreground hover:text-primary">
                   <RotateCcw className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                <Button variant="ghost" size="icon" aria-label="Good response" className="h-11 w-11 md:h-8 md:w-8 text-muted-foreground hover:text-primary">
                   <ThumbsUp className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                <Button variant="ghost" size="icon" aria-label="Bad response" className="h-11 w-11 md:h-8 md:w-8 text-muted-foreground hover:text-primary">
                   <ThumbsDown className="w-3.5 h-3.5" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary">
+                <Button variant="ghost" size="icon" aria-label="Copy response" className="h-11 w-11 md:h-8 md:w-8 text-muted-foreground hover:text-primary">
                   <Copy className="w-3.5 h-3.5" />
                 </Button>
               </div>

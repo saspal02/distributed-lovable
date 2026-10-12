@@ -2,6 +2,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { json } from '@codemirror/lang-json';
 import { css } from '@codemirror/lang-css';
+import { EditorView } from '@codemirror/view';
 import { FileCode, Loader2 } from "lucide-react";
 import {githubDark} from '@uiw/codemirror-theme-github';
 
@@ -53,22 +54,24 @@ export function CodeEditor({ content, filePath, isLoading, onCodeChange }: CodeE
   };
 
   return (
-    <div className="h-full w-full overflow-hidden border-l">
+    <div className="h-full w-full min-w-0 overflow-hidden border-l">
       <CodeMirror
         value={content}
         height="100%"
         theme={githubDark}
         editable={false}
-        extensions={getLanguage(filePath)}
+        extensions={[...getLanguage(filePath), EditorView.lineWrapping]}
         onChange={(value) => onCodeChange?.(value)}
         basicSetup={{
           lineNumbers: true,
           foldGutter: true,
-          dropCursor: true,
-          allowMultipleSelections: true,
+          dropCursor: false,
+          allowMultipleSelections: false,
           indentOnInput: true,
+          highlightActiveLine: false,
+          highlightActiveLineGutter: false,
         }}
-        className="text-sm h-full"
+        className="text-[13px] md:text-sm h-full [&_.cm-scroller]:overscroll-contain"
       />
     </div>
   );

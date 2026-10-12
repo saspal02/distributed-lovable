@@ -61,6 +61,22 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  input, textarea, select {
+    font-size: 16px;
+  }
+
+  @media (min-width: 768px) {
+    input, textarea, select {
+      font-size: inherit;
+    }
   }
 
   /* Scrollbar styling */
@@ -106,6 +122,30 @@
   .file-tree-item {
     @apply flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer transition-colors;
     @apply hover:bg-panel-hover text-muted-foreground hover:text-foreground;
+    min-height: 44px;
+  }
+
+  @media (min-width: 768px) {
+    .file-tree-item {
+      min-height: 0;
+    }
+  }
+
+  @media (hover: none) {
+    .group .group-hover-visible {
+      opacity: 1 !important;
+    }
+  }
+
+  .mobile-touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  @media (min-width: 768px) {
+    .mobile-touch-target {
+      min-height: 0;
+      min-width: 0;
+    }
   }
 
   .file-tree-item.active {
@@ -129,7 +169,7 @@
   }
 
   .panel-header {
-    @apply h-12 flex items-center justify-between px-4 border-b border-border/50 bg-panel;
+    @apply min-h-[48px] flex items-center justify-between px-3 md:px-4 py-2 border-b border-border/50 bg-panel;
   }
 
   .tab-button {
@@ -143,6 +183,22 @@
 }
 
 @layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .h-dvh {
+    height: 100dvh;
+  }
+
+  .min-h-dvh {
+    min-height: 100dvh;
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
   }

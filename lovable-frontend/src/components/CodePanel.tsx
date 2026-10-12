@@ -160,11 +160,11 @@ export function CodePanel({ projectId, updatedFiles }: CodePanelProps) {
   }, []);
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full min-h-0 min-w-0">
       {/* File Tree */}
-      <div className="w-56 shrink-0 border-r border-border/50 overflow-y-auto bg-panel">
+      <div className="w-40 sm:w-48 md:w-56 shrink-0 border-r border-border/50 overflow-y-auto overflow-x-hidden bg-panel min-h-0">
         <div className="panel-header">
-          <span className="text-sm font-medium">Files</span>
+          <span className="text-sm font-medium truncate">Files</span>
         </div>
         <FileTree
           files={files}
@@ -175,7 +175,7 @@ export function CodePanel({ projectId, updatedFiles }: CodePanelProps) {
       </div>
 
       {/* Code Editor with Tabs */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {/* File Tabs */}
         <FileTabs
           openTabs={openTabs}
@@ -185,7 +185,7 @@ export function CodePanel({ projectId, updatedFiles }: CodePanelProps) {
         />
         
         {/* Editor */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <CodeEditor
             content={fileContent}
             filePath={activeTab}
