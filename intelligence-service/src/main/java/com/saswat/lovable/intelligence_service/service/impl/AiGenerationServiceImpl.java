@@ -113,6 +113,10 @@ public class AiGenerationServiceImpl implements AiGenerationService {
                         return new StreamResponse(text != null ? text : "");
                     }
                     return new StreamResponse("");
+                })
+                .onErrorResume(error -> {
+                    log.error("Chat stream failed for projectId: {}", projectId, error);
+                    return Flux.just(new StreamResponse("Chat is temporarily unavailable due to API rate limits. Please retry in about 30 seconds."));
                 });
     }
 
