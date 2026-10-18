@@ -17,9 +17,12 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
@@ -28,6 +31,14 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
 
     private static final int MAX_FILE_BYTES = 64 * 1024;
     private static final int MAX_TOTAL_BYTES = 256 * 1024;
+
+    private static final String PATH_ATTRIBUTE = "path=\"";
+    private static final String FILE_OPEN = "<file ";
+
+    private static final Pattern FILE_REFERENCE_PATTERN = Pattern.compile(
+            "[A-Za-z0-9_./-]+\\.(?:tsx|ts|jsx|js|css|json|html)",
+            Pattern.CASE_INSENSITIVE
+    );
 
     private static final Set<String> SKIPPED_EXTENSIONS = Set.of(
             "png", "jpg", "jpeg", "gif", "svg", "ico", "webp", "bmp",
@@ -70,7 +81,8 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
             fileTree = List.of();
         }
 
-        String projectContext = buildProjectContext(projectId, fileTree, authorization);
+        String userMessage = userMessages.isEmpty() ? "" : userMessages.get(0).getText();
+        String projectContext = buildProjectContext(projectId, fileTree, authorization, userMessage);
 
         List<Message> allMessages = new ArrayList<>();
         if (systemMessage != null) {
@@ -91,18 +103,15 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
                 .build();
     }
 
-    private String buildProjectContext(Long projectId, List<FileNode> fileTree, String authorization) {
+    private String buildProjectContext(Long projectId, List<FileNode> fileTree, String authorization, String userMessage) {
         StringBuilder context = new StringBuilder();
         context.append("---- FILE_TREE ----\n").append(fileTree);
         context.append("\n\n ---- FILE_CONTENTS ----\n");
-        context.append("(The current contents of the project files are provided below inside <file path=\"...\"> tags.)\n");
+        context.append("(The current contents of the relevant project files are provided below inside `")
+                .append(FILE_OPEN).append(PATH_ATTRIBUTE).append("...\">` tags.)\n");
 
         int totalBytes = 0;
-        for (FileNode node : fileTree) {
-            String path = node.path();
-            if (path == null || path.isBlank() || isSkipped(path)) {
-                continue;
-            }
+        for (String path : selectFiles(fileTree, userMessage)) {
             if (totalBytes >= MAX_TOTAL_BYTES) {
                 context.append("\n(remaining files omitted: context budget reached)\n");
                 break;
@@ -115,12 +124,60 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
                 content = content.substring(0, MAX_FILE_BYTES) + "\n... (truncated)\n";
             }
             totalBytes += content.length();
-            context.append("\n<file path=\"").append(path).append("\">\n")
+            context.append("\n").append(FILE_OPEN).append(PATH_ATTRIBUTE).append(path).append("\">\n")
                     .append(content)
                     .append("\n</file>\n");
         }
 
         return context.toString();
+    }
+
+    private List<String> selectFiles(List<FileNode> fileTree, String userMessage) {
+        Set<String> available = new LinkedHashSet<>();
+        for (FileNode node : fileTree) {
+            String path = node.path();
+            if (path == null || path.isBlank() || isSkipped(path)) {
+                continue;
+            }
+            available.add(path);
+        }
+
+        Set<String> selected = new LinkedHashSet<>();
+        if (available.contains("package.json")) {
+            selected.add("package.json");
+        }
+
+        Set<String> requested = extractRequestedPaths(userMessage, available);
+        if (requested.isEmpty()) {
+            selected.addAll(available);
+        } else {
+            selected.addAll(requested);
+        }
+
+        return new ArrayList<>(selected);
+    }
+
+    private Set<String> extractRequestedPaths(String userMessage, Set<String> available) {
+        Set<String> paths = new LinkedHashSet<>();
+        if (userMessage == null || userMessage.isBlank()) {
+            return paths;
+        }
+
+        Matcher matcher = FILE_REFERENCE_PATTERN.matcher(userMessage);
+        while (matcher.find()) {
+            String candidate = matcher.group();
+            if (available.contains(candidate)) {
+                paths.add(candidate);
+                continue;
+            }
+            for (String path : available) {
+                if (path.endsWith("/" + candidate)) {
+                    paths.add(path);
+                }
+            }
+        }
+
+        return paths;
     }
 
     private String fetchFileContent(Long projectId, String path, String authorization) {
