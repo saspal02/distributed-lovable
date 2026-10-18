@@ -13,8 +13,6 @@ import com.saswat.lovable.intelligence_service.entity.ChatSession;
 import com.saswat.lovable.intelligence_service.entity.ChatSessionId;
 import com.saswat.lovable.intelligence_service.llm.AgenticChatRunner;
 import com.saswat.lovable.intelligence_service.llm.LlmResponseParser;
-import com.saswat.lovable.intelligence_service.llm.ProjectContextBuilder;
-import com.saswat.lovable.intelligence_service.llm.PromptUtils;
 import com.saswat.lovable.intelligence_service.repository.ChatEventRepository;
 import com.saswat.lovable.intelligence_service.repository.ChatMessageRepository;
 import com.saswat.lovable.intelligence_service.repository.ChatSessionRepository;
@@ -22,7 +20,6 @@ import com.saswat.lovable.intelligence_service.service.AiGenerationService;
 import com.saswat.lovable.intelligence_service.service.UsageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -41,7 +38,6 @@ public class AiGenerationServiceImpl implements AiGenerationService {
 
     private final AuthUtil authUtil;
     private final AgenticChatRunner agenticChatRunner;
-    private final ProjectContextBuilder projectContextBuilder;
     private final ChatSessionRepository chatSessionRepository;
     private final LlmResponseParser llmResponseParser;
     private final ChatMessageRepository chatMessageRepository;
@@ -63,10 +59,7 @@ public class AiGenerationServiceImpl implements AiGenerationService {
         AtomicReference<Long> endTime = new AtomicReference<>(0L);
         AtomicReference<Usage> usageRef = new AtomicReference<>();
 
-        List<Message> initialMessages = projectContextBuilder.buildInitialMessages(
-                PromptUtils.CODE_GENERATION_SYSTEM_PROMPT, userMessage, projectId, authorization);
-
-        return agenticChatRunner.stream(initialMessages, projectId, authorization)
+        return agenticChatRunner.stream(userMessage, projectId, authorization)
                 .doOnNext(response -> {
                     if (response.getResults() != null && !response.getResults().isEmpty()) {
                         String content = response.getResult().getOutput().getText();

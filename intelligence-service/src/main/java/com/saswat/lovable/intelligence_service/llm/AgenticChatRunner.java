@@ -1,19 +1,20 @@
 package com.saswat.lovable.intelligence_service.llm;
 
-import com.saswat.lovable.intelligence_service.client.WorkspaceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,7 +24,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class AgenticChatRunner {
 
-    private static final int MAX_TOOL_ROUNDS = 5;
+    private static final int MAX_SELECTION_ROUNDS = 4;
     private static final int MAX_FILES_PER_ROUND = 10;
 
     private static final Pattern TOOL_ARGS_PATTERN = Pattern.compile(
@@ -32,14 +33,19 @@ public class AgenticChatRunner {
     );
 
     private final ChatClient chatClient;
-    private final WorkspaceClient workspaceClient;
+    private final ProjectContextBuilder projectContextBuilder;
 
-    public Flux<ChatResponse> stream(List<Message> messages, Long projectId, String authorization) {
-        return runRound(messages, projectId, authorization, new LinkedHashSet<>(), 1);
+    public Flux<ChatResponse> stream(String userMessage, Long projectId, String authorization) {
+        List<Message> selectionMessages =
+                projectContextBuilder.buildSelectionMessages(userMessage, projectId, authorization);
+        Map<String, String> knownContents = new LinkedHashMap<>();
+        return runSelection(
+                selectionMessages, projectId, authorization, new LinkedHashSet<>(), knownContents, 1, userMessage);
     }
 
-    private Flux<ChatResponse> runRound(
-            List<Message> messages, Long projectId, String authorization, Set<String> readPaths, int roundNumber) {
+    private Flux<ChatResponse> runSelection(
+            List<Message> messages, Long projectId, String authorization, Set<String> readPaths,
+            Map<String, String> knownContents, int roundNumber, String userMessage) {
 
         StringBuilder roundText = new StringBuilder();
 
@@ -53,31 +59,40 @@ public class AgenticChatRunner {
                         roundText.append(text);
                     }
                 })
-                .concatWith(Flux.defer(() ->
-                        nextRound(messages, roundText.toString(), projectId, authorization, readPaths, roundNumber)));
+                .concatWith(Flux.defer(() -> afterSelection(
+                        messages, roundText.toString(), projectId, authorization, readPaths, knownContents, roundNumber, userMessage)));
     }
 
-    private Flux<ChatResponse> nextRound(
-            List<Message> messages, String roundText, Long projectId,
-            String authorization, Set<String> readPaths, int roundNumber) {
+    private Flux<ChatResponse> afterSelection(
+            List<Message> messages, String roundText, Long projectId, String authorization,
+            Set<String> readPaths, Map<String, String> knownContents, int roundNumber, String userMessage) {
 
         List<String> requested = extractRequestedPaths(roundText, readPaths);
-        if (requested.isEmpty()) {
-            return Flux.empty();
-        }
-        if (roundNumber >= MAX_TOOL_ROUNDS) {
-            log.warn("Tool round cap reached for projectId: {}", projectId);
-            return Flux.empty();
+        if (requested.isEmpty() || roundNumber >= MAX_SELECTION_ROUNDS) {
+            return generate(userMessage, projectId, authorization, knownContents);
         }
 
-        String toolResult = readFiles(requested, projectId, authorization);
+        Map<String, String> roundContents = projectContextBuilder.readContents(requested, projectId, authorization);
+        knownContents.putAll(roundContents);
         readPaths.addAll(requested);
 
         List<Message> nextMessages = new ArrayList<>(messages);
         nextMessages.add(new AssistantMessage(roundText));
-        nextMessages.add(new UserMessage(toolResult));
+        nextMessages.add(new UserMessage(renderRequestedContents(requested, roundContents)));
 
-        return runRound(nextMessages, projectId, authorization, readPaths, roundNumber + 1);
+        return runSelection(nextMessages, projectId, authorization, readPaths, knownContents, roundNumber + 1, userMessage);
+    }
+
+    private Flux<ChatResponse> generate(
+            String userMessage, Long projectId, String authorization, Map<String, String> knownContents) {
+
+        List<Message> generationMessages =
+                projectContextBuilder.buildGenerationMessages(userMessage, projectId, authorization, knownContents);
+
+        return chatClient.prompt()
+                .messages(generationMessages)
+                .stream()
+                .chatResponse();
     }
 
     private List<String> extractRequestedPaths(String roundText, Set<String> readPaths) {
@@ -104,24 +119,18 @@ public class AgenticChatRunner {
         return paths;
     }
 
-    private String readFiles(List<String> paths, Long projectId, String authorization) {
+    private String renderRequestedContents(List<String> paths, Map<String, String> contents) {
         StringBuilder result = new StringBuilder("Here are the requested file contents.\n");
-        CodeGenerationTools tools = new CodeGenerationTools(projectId, workspaceClient, authorization);
-
         for (String path : paths) {
-            try {
-                List<String> content = tools.readFiles(List.of(path));
-                if (content.isEmpty()) {
-                    result.append("\n--- FILE: ").append(path).append(" (empty) ---\n");
-                } else {
-                    result.append("\n").append(content.get(0)).append("\n");
-                }
-            } catch (Exception e) {
-                log.warn("Failed to read {} for project {}: {}", path, projectId, e.getMessage());
-                result.append("\n--- ERROR: could not read ").append(path).append(" ---\n");
+            String content = contents.get(path);
+            if (content == null) {
+                result.append("\n--- FILE: ").append(path).append(" (not found) ---\n");
+            } else {
+                result.append("\n--- START OF FILE: ").append(path).append(" ---\n")
+                        .append(content)
+                        .append("\n--- END OF FILE ---\n");
             }
         }
-
         return result.toString();
     }
 
