@@ -32,6 +32,11 @@ public class LlmResponseParser {
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL
     );
 
+    private static final Pattern UNCLOSED_FILE_PATTERN = Pattern.compile(
+            "<file([^>]*)>((?:(?!</file>)[\\s\\S])*)$",
+            Pattern.CASE_INSENSITIVE
+    );
+
     // Helper to extract specific attributes (path="..." or args="...") from Group 3
     private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile(
             "(path|args)=\"([^\"]+)\""
@@ -42,11 +47,13 @@ public class LlmResponseParser {
         int orderCounter = 1;
 
         Matcher matcher = GENERIC_TAG_PATTERN.matcher(fullResponse);
+        int lastMatchEnd = 0;
 
         while (matcher.find()) {
             String tagName = matcher.group(2).toLowerCase();
             String attributes = matcher.group(3);
             String content = matcher.group(4).trim();
+            lastMatchEnd = matcher.end();
 
             // Extract attributes map
             Map<String, String> attrMap = extractAttributes(attributes);
@@ -73,6 +80,26 @@ public class LlmResponseParser {
             }
 
             events.add(builder.build());
+        }
+
+        Matcher unclosedMatcher = UNCLOSED_FILE_PATTERN.matcher(fullResponse.substring(lastMatchEnd));
+        if (unclosedMatcher.find()) {
+            String attributes = unclosedMatcher.group(1);
+            String content = unclosedMatcher.group(2).trim();
+            Map<String, String> attrMap = extractAttributes(attributes);
+            String path = attrMap.get("path");
+
+            if (path != null && !content.isEmpty()) {
+                log.warn("Recovered unclosed <file> tag for path {}", path);
+                events.add(ChatEvent.builder()
+                        .status(ChatEventStatus.PENDING)
+                        .type(ChatEventType.FILE_EDIT)
+                        .chatMessage(parentMessage)
+                        .filePath(path)
+                        .content(content)
+                        .sequenceOrder(orderCounter)
+                        .build());
+            }
         }
 
         return events;

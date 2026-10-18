@@ -12,7 +12,6 @@ import com.saswat.lovable.intelligence_service.entity.ChatEvent;
 import com.saswat.lovable.intelligence_service.entity.ChatMessage;
 import com.saswat.lovable.intelligence_service.entity.ChatSession;
 import com.saswat.lovable.intelligence_service.entity.ChatSessionId;
-import com.saswat.lovable.intelligence_service.llm.CodeGenerationTools;
 import com.saswat.lovable.intelligence_service.llm.FileTreeContextAdvisor;
 import com.saswat.lovable.intelligence_service.llm.LlmResponseParser;
 import com.saswat.lovable.intelligence_service.llm.PromptUtils;
@@ -68,7 +67,6 @@ public class AiGenerationServiceImpl implements AiGenerationService {
         );
 
         StringBuilder fullResponseBuffer = new StringBuilder();
-        CodeGenerationTools codeGenerationTools = new CodeGenerationTools(projectId, workspaceClient, authorization);
 
         AtomicReference<Long> startTime = new AtomicReference<>(System.currentTimeMillis());
         AtomicReference<Long> endTime = new AtomicReference<>(0L);
@@ -77,7 +75,6 @@ public class AiGenerationServiceImpl implements AiGenerationService {
         return chatClient.prompt()
                 .system(PromptUtils.CODE_GENERATION_SYSTEM_PROMPT)
                 .user(userMessage)
-                .tools(codeGenerationTools)
                 .advisors(advisorSpec -> {
                             advisorSpec.params(advisorParams);
                             advisorSpec.advisors(fileTreeContextAdvisor);
@@ -151,6 +148,14 @@ public class AiGenerationServiceImpl implements AiGenerationService {
         assistantChatMessage = chatMessageRepository.save(assistantChatMessage);
 
         List<ChatEvent> chatEventList = llmResponseParser.parseChatEvents(fullText, assistantChatMessage);
+
+        long fileEditCount = chatEventList.stream()
+                .filter(e -> e.getType() == ChatEventType.FILE_EDIT)
+                .count();
+        if (fileEditCount == 0) {
+            log.warn("No FILE_EDIT produced for projectId: {}, rawResponse: {}", projectId, fullText);
+        }
+
         chatEventList.addFirst(ChatEvent.builder()
                         .type(ChatEventType.THOUGHT)
                         .status(ChatEventStatus.CONFIRMED)

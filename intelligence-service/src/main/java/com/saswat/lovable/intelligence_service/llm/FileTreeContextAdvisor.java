@@ -18,11 +18,25 @@ import reactor.core.publisher.Flux;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class FileTreeContextAdvisor implements StreamAdvisor {
+
+    private static final int MAX_FILE_BYTES = 64 * 1024;
+    private static final int MAX_TOTAL_BYTES = 256 * 1024;
+
+    private static final Set<String> SKIPPED_EXTENSIONS = Set.of(
+            "png", "jpg", "jpeg", "gif", "svg", "ico", "webp", "bmp",
+            "woff", "woff2", "ttf", "eot", "otf",
+            "mp4", "webm", "mp3", "wav", "pdf", "zip", "gz", "lock"
+    );
+
+    private static final Set<String> SKIPPED_FILES = Set.of(
+            "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lockb"
+    );
 
     private final WorkspaceClient workspaceClient;
 
@@ -52,23 +66,17 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
 
         List<Message> allMessages = new ArrayList<>();
 
-        // Add original system message
         if (systemMessage != null) {
             allMessages.add(systemMessage);
         }
 
         List<FileNode> fileTree = workspaceClient.getFileTree(projectId, authorization).files();
-        String fileTreeContext = "\n\n ---- FILE_TREE ----\n"+fileTree.toString();
-        allMessages.add(new SystemMessage(fileTreeContext));
-
-        try {
-            String packageJson = workspaceClient.getFileContent(projectId, "package.json", authorization);
-            if (packageJson != null && !packageJson.isBlank()) {
-                allMessages.add(new SystemMessage("\n\n ---- PACKAGE_JSON ----\n" + packageJson));
-            }
-        } catch (Exception e) {
-            log.warn("Could not load package.json for project {}", projectId);
+        if (fileTree == null) {
+            fileTree = List.of();
         }
+
+        allMessages.add(new SystemMessage("\n\n ---- FILE_TREE ----\n" + fileTree));
+        allMessages.add(new SystemMessage(buildFileContents(projectId, fileTree, authorization)));
 
         allMessages.addAll(userMessages);
 
@@ -78,6 +86,60 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
                 .build();
     }
 
+    private String buildFileContents(Long projectId, List<FileNode> fileTree, String authorization) {
+        StringBuilder contents = new StringBuilder("\n\n ---- FILE_CONTENTS ----\n");
+        int totalBytes = 0;
+
+        for (FileNode node : fileTree) {
+            String path = node.path();
+            if (path == null || path.isBlank() || isSkipped(path)) {
+                continue;
+            }
+            if (totalBytes >= MAX_TOTAL_BYTES) {
+                contents.append("\n(remaining files omitted: context budget reached)\n");
+                break;
+            }
+            String content = fetchFileContent(projectId, path, authorization);
+            if (content == null || content.isBlank()) {
+                continue;
+            }
+            if (content.length() > MAX_FILE_BYTES) {
+                content = content.substring(0, MAX_FILE_BYTES) + "\n... (truncated)\n";
+            }
+            totalBytes += content.length();
+            contents.append("\n<file path=\"").append(path).append("\">\n")
+                    .append(content)
+                    .append("\n</file>\n");
+        }
+
+        return contents.toString();
+    }
+
+    private String fetchFileContent(Long projectId, String path, String authorization) {
+        try {
+            return workspaceClient.getFileContent(projectId, path, authorization);
+        } catch (Exception e) {
+            log.warn("Could not load file {} for project {}", path, projectId);
+            return null;
+        }
+    }
+
+    private boolean isSkipped(String path) {
+        String lower = path.toLowerCase();
+        int slash = lower.lastIndexOf('/');
+        String fileName = slash >= 0 ? lower.substring(slash + 1) : lower;
+
+        if (SKIPPED_FILES.contains(fileName)) {
+            return true;
+        }
+
+        int dot = fileName.lastIndexOf('.');
+        if (dot < 0) {
+            return false;
+        }
+
+        return SKIPPED_EXTENSIONS.contains(fileName.substring(dot + 1));
+    }
 
     @Override
     public String getName() {
@@ -89,11 +151,3 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
         return 0;
     }
 }
-
-
-
-
-
-
-
-
