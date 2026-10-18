@@ -6,14 +6,14 @@ import com.saswat.lovable.common_lib.enums.MessageRole;
 import com.saswat.lovable.common_lib.error.ResourceNotFoundException;
 import com.saswat.lovable.common_lib.event.FileStoreRequestEvent;
 import com.saswat.lovable.common_lib.security.AuthUtil;
-import com.saswat.lovable.intelligence_service.client.WorkspaceClient;
 import com.saswat.lovable.intelligence_service.dto.chat.StreamResponse;
 import com.saswat.lovable.intelligence_service.entity.ChatEvent;
 import com.saswat.lovable.intelligence_service.entity.ChatMessage;
 import com.saswat.lovable.intelligence_service.entity.ChatSession;
 import com.saswat.lovable.intelligence_service.entity.ChatSessionId;
-import com.saswat.lovable.intelligence_service.llm.FileTreeContextAdvisor;
+import com.saswat.lovable.intelligence_service.llm.AgenticChatRunner;
 import com.saswat.lovable.intelligence_service.llm.LlmResponseParser;
+import com.saswat.lovable.intelligence_service.llm.ProjectContextBuilder;
 import com.saswat.lovable.intelligence_service.llm.PromptUtils;
 import com.saswat.lovable.intelligence_service.repository.ChatEventRepository;
 import com.saswat.lovable.intelligence_service.repository.ChatMessageRepository;
@@ -22,7 +22,7 @@ import com.saswat.lovable.intelligence_service.service.AiGenerationService;
 import com.saswat.lovable.intelligence_service.service.UsageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -31,25 +31,22 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AiGenerationServiceImpl implements AiGenerationService {
 
-    private final ChatClient chatClient;
     private final AuthUtil authUtil;
-    private final FileTreeContextAdvisor fileTreeContextAdvisor;
+    private final AgenticChatRunner agenticChatRunner;
+    private final ProjectContextBuilder projectContextBuilder;
     private final ChatSessionRepository chatSessionRepository;
     private final LlmResponseParser llmResponseParser;
     private final ChatMessageRepository chatMessageRepository;
     private final ChatEventRepository chatEventRepository;
     private final UsageService usageService;
-    private final WorkspaceClient workspaceClient;
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
 
@@ -60,28 +57,16 @@ public class AiGenerationServiceImpl implements AiGenerationService {
         Long userId = authUtil.getCurrentUserId();
         ChatSession chatSession = createChatSessionIfNotExists(projectId, userId);
 
-        Map<String, Object> advisorParams = Map.of(
-                "userId", userId,
-                "projectId", projectId,
-                "authorization", authorization
-        );
-
         StringBuilder fullResponseBuffer = new StringBuilder();
 
         AtomicReference<Long> startTime = new AtomicReference<>(System.currentTimeMillis());
         AtomicReference<Long> endTime = new AtomicReference<>(0L);
         AtomicReference<Usage> usageRef = new AtomicReference<>();
 
-        return chatClient.prompt()
-                .system(PromptUtils.CODE_GENERATION_SYSTEM_PROMPT)
-                .user(userMessage)
-                .advisors(advisorSpec -> {
-                            advisorSpec.params(advisorParams);
-                            advisorSpec.advisors(fileTreeContextAdvisor);
-                        }
-                )
-                .stream()
-                .chatResponse()
+        List<Message> initialMessages = projectContextBuilder.buildInitialMessages(
+                PromptUtils.CODE_GENERATION_SYSTEM_PROMPT, userMessage, projectId, authorization);
+
+        return agenticChatRunner.stream(initialMessages, projectId, authorization)
                 .doOnNext(response -> {
                     if (response.getResults() != null && !response.getResults().isEmpty()) {
                         String content = response.getResult().getOutput().getText();
