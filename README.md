@@ -351,7 +351,7 @@ The `.env` file configures all infrastructure and service connections:
 | `JWT_SECRET` | Shared JWT signing secret | Base64-encoded string |
 | `MINIO_ROOT_USER` | MinIO admin username | `miniousr` |
 | `MINIO_ROOT_PASSWORD` | MinIO admin password | `miniopwd` |
-| `AI_API_KEY` | OpenAI API key | `sk-or-v1-...` |
+| `AI_API_KEY` | Google Gemini API key (Google AI Studio) | `AQ.Ab8...` |
 | `STRIPE_API_KEY` | Stripe secret API key | `sk_test_...` |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | `whsec_...` |
 | `GITHUB_URI` | Config server Git repository URL | `https://github.com/...` |
