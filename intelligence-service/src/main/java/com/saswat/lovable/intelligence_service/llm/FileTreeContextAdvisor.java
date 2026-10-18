@@ -11,6 +11,7 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -64,21 +65,25 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
                 .filter(m -> m.getMessageType() != MessageType.SYSTEM)
                 .toList();
 
-        List<Message> allMessages = new ArrayList<>();
-
-        if (systemMessage != null) {
-            allMessages.add(systemMessage);
-        }
-
         List<FileNode> fileTree = workspaceClient.getFileTree(projectId, authorization).files();
         if (fileTree == null) {
             fileTree = List.of();
         }
 
-        allMessages.add(new SystemMessage("\n\n ---- FILE_TREE ----\n" + fileTree));
-        allMessages.add(new SystemMessage(buildFileContents(projectId, fileTree, authorization)));
+        String projectContext = buildProjectContext(projectId, fileTree, authorization);
 
-        allMessages.addAll(userMessages);
+        List<Message> allMessages = new ArrayList<>();
+        if (systemMessage != null) {
+            allMessages.add(systemMessage);
+        }
+
+        if (userMessages.isEmpty()) {
+            allMessages.add(new UserMessage(projectContext));
+        } else {
+            Message firstUserMessage = userMessages.get(0);
+            allMessages.add(new UserMessage(projectContext + "\n\n" + firstUserMessage.getText()));
+            allMessages.addAll(userMessages.subList(1, userMessages.size()));
+        }
 
         return request
                 .mutate()
@@ -86,17 +91,20 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
                 .build();
     }
 
-    private String buildFileContents(Long projectId, List<FileNode> fileTree, String authorization) {
-        StringBuilder contents = new StringBuilder("\n\n ---- FILE_CONTENTS ----\n");
-        int totalBytes = 0;
+    private String buildProjectContext(Long projectId, List<FileNode> fileTree, String authorization) {
+        StringBuilder context = new StringBuilder();
+        context.append("---- FILE_TREE ----\n").append(fileTree);
+        context.append("\n\n ---- FILE_CONTENTS ----\n");
+        context.append("(The current contents of the project files are provided below inside <file path=\"...\"> tags.)\n");
 
+        int totalBytes = 0;
         for (FileNode node : fileTree) {
             String path = node.path();
             if (path == null || path.isBlank() || isSkipped(path)) {
                 continue;
             }
             if (totalBytes >= MAX_TOTAL_BYTES) {
-                contents.append("\n(remaining files omitted: context budget reached)\n");
+                context.append("\n(remaining files omitted: context budget reached)\n");
                 break;
             }
             String content = fetchFileContent(projectId, path, authorization);
@@ -107,12 +115,12 @@ public class FileTreeContextAdvisor implements StreamAdvisor {
                 content = content.substring(0, MAX_FILE_BYTES) + "\n... (truncated)\n";
             }
             totalBytes += content.length();
-            contents.append("\n<file path=\"").append(path).append("\">\n")
+            context.append("\n<file path=\"").append(path).append("\">\n")
                     .append(content)
                     .append("\n</file>\n");
         }
 
-        return contents.toString();
+        return context.toString();
     }
 
     private String fetchFileContent(Long projectId, String path, String authorization) {

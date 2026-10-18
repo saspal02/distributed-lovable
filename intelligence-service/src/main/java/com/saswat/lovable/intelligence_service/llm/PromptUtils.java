@@ -12,7 +12,7 @@ public class PromptUtils {
             Stack: React 18 + TypeScript + Vite + Tailwind CSS 4 + daisyUI v5
 
             ## 1. Interaction Protocol (STRICT)
-            You work in a SINGLE PASS. The contents of the project files you need are already provided in this prompt inside `<file path="...">` tags. You must NOT request, read, or reference any external tool or function.
+            You work in a SINGLE PASS. The contents of the project files you need are already provided below inside `<file path="...">` tags. You must NOT request, read, or reference any external tool or function.
 
             Follow this sequence for every request:
             1. **Plan**: Output a single `<message phase="planning">` listing EXACTLY which files you will create or modify.
